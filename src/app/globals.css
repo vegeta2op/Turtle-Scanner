@@ -1,26 +1,245 @@
 @import "tailwindcss";
 
+/* Design tokens via CSS variables */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
+
+  --radius: 0.5rem;
 }
 
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+
+  --primary: 210 40% 98%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 210 40% 98%;
+}
+
+/* Map tokens for Tailwind v4 utilities (bg-background, text-foreground, etc.) */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --radius: var(--radius);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background:
+      radial-gradient(1200px 600px at 10% -10%, hsl(var(--primary)/0.10), transparent),
+      radial-gradient(900px 500px at 120% 10%, hsl(var(--accent)/0.12), transparent),
+      linear-gradient(180deg, hsl(220 55% 24%) 0%, hsl(220 50% 26%) 35%, hsl(225 45% 30%) 100%);
+    background-size: 200% 200%, 100% 100%, 200% 200%;
+    animation: gradientShift 18s ease-in-out infinite;
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Utilities */
+.glass { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.hover-lift { transition: transform 200ms ease, box-shadow 200ms ease; }
+.hover-lift:hover { transform: translateY(-2px); }
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, hsl(var(--foreground)/0.06), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%, 0% 0%, 100% 50%; }
+  50% { background-position: 100% 50%, 0% 0%, 0% 50%; }
+  100% { background-position: 0% 50%, 0% 0%, 100% 50%; }
+}
+
+/* Glass panels with gradient outlines matching theme */
+.glass-panel {
+  border: 1px solid transparent;
+  background: linear-gradient(hsl(var(--background)/0.55), hsl(var(--background)/0.55)) padding-box,
+              linear-gradient(135deg, hsl(var(--primary)/0.45), hsl(var(--accent)/0.45)) border-box;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Glossy nav variant */
+.glass-glossy {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(to bottom, hsl(var(--background)/0.65), hsl(var(--background)/0.45)) padding-box,
+    linear-gradient(135deg, hsl(var(--primary)/0.5), hsl(var(--accent)/0.5)) border-box;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 24px rgba(0,0,0,0.25);
+}
+
+/* Glassmorphism for nav: frosted, glossy, with subtle glare */
+.glass-morph {
+  position: relative;
+  border: 1px solid hsl(var(--border)/0.8);
+  background: hsl(var(--background)/0.38);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.22);
+  overflow: hidden;
+}
+.glass-morph::before {
+  content: "";
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 60%;
+  height: 50%;
+  background: radial-gradient(120% 100% at 10% -20%, rgba(255,255,255,0.28), transparent 60%);
+  pointer-events: none;
+}
+
+/* Plain glass for main surface (no gradient outline) */
+.glass-plain {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background)/0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Modern panel: softer, less border-y, with subtle gradient and halo */
+.panel-modern {
+  border-radius: 18px;
+  border: none;
+  background: hsl(var(--background)/0.60);
+  box-shadow: 0 10px 34px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06);
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+}
+
+.hairline-b {
+  border-bottom: 1px solid hsl(var(--border)/0.12);
+}
+
+.row-modern {
+  border-radius: 12px;
+  transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+.row-modern:hover {
+  background: hsl(var(--foreground)/0.07);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset;
+}
+.row-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 18px; height: 18px;
+  border-radius: 4px;
+  background: hsl(var(--primary)/0.12);
+  color: hsl(var(--primary));
+}
+
+/* Insane iPhone-like modal launch animation */
+@keyframes modalLaunchIn {
+  0% {
+    opacity: 0;
+    transform: perspective(1200px) translateY(30px) scale(0.88) rotateX(8deg) rotateZ(-0.6deg);
+    filter: blur(6px) saturate(80%);
+  }
+  55% {
+    opacity: 1;
+    transform: perspective(1200px) translateY(0px) scale(1.06) rotateX(0deg) rotateZ(0deg);
+    filter: blur(0) saturate(115%);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) translateY(0px) scale(1) rotateX(0deg) rotateZ(0deg);
+    filter: blur(0) saturate(100%);
+  }
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-modal-in {
+  animation: modalLaunchIn 560ms cubic-bezier(0.2, 0.9, 0.25, 1.0);
+  will-change: transform, opacity, filter;
+  transform-origin: 50% 50%;
+}
+
+.animate-overlay-in {
+  animation: overlayIn 240ms ease-out;
 }

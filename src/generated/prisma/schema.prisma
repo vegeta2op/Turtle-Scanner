@@ -1,0 +1,212 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Auth models (NextAuth Prisma Adapter compatible)
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  // Local auth
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  scans        Scan[]                @relation("UserScans")
+  integrations IntegrationSettings[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// App domain models
+model Organization {
+  id            String                @id @default(cuid())
+  name          String
+  gitlabGroupId Int?
+  description   String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  repositories  Repository[]
+  scans         Scan[]
+  integrations  IntegrationSettings[]
+}
+
+model Repository {
+  id              String        @id @default(cuid())
+  name            String
+  gitlabProjectId Int?
+  githubRepoId    Int?
+  defaultBranch   String?
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  scans Scan[]
+
+  @@index([gitlabProjectId])
+  @@index([githubRepoId])
+}
+
+enum ScanStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model Scan {
+  id               String        @id @default(cuid())
+  createdAt        DateTime      @default(now())
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  status           ScanStatus    @default(QUEUED)
+  createdByUserId  String
+  createdByUser    User          @relation("UserScans", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  organizationId   String?
+  organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  repositoryId     String?
+  repository       Repository?   @relation(fields: [repositoryId], references: [id], onDelete: SetNull)
+  includeCrossRepo Boolean       @default(true)
+  parameters       Json?
+  reportMarkdown   String?
+
+  findings ScanFinding[]
+}
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+model ScanFinding {
+  id             String   @id @default(cuid())
+  scanId         String
+  scan           Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  severity       Severity
+  title          String
+  description    String?
+  recommendation String?
+  filePath       String?
+  line           Int?
+  externalRefs   Json?
+  createdAt      DateTime @default(now())
+}
+
+enum IntegrationProvider {
+  GITLAB
+  JIRA
+  SLACK
+  GITHUB
+}
+
+model IntegrationSettings {
+  id              String              @id @default(cuid())
+  provider        IntegrationProvider
+  userId          String?
+  user            User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId  String?
+  organization    Organization?       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // Stored encrypted
+  accessTokenEnc  String?
+  refreshTokenEnc String?
+  data            Json?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  // GitLab persistent index
+  gitlabGroups    GitlabGroup[]
+  gitlabProjects  GitlabProject[]
+
+  @@index([provider, userId])
+  @@index([provider, organizationId])
+}
+
+// GitLab Org Map Persistent Index
+model GitlabGroup {
+  id                  String              @id @default(cuid())
+  integrationId       String
+  integration         IntegrationSettings @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  gitlabGroupId       Int
+  parentGitlabGroupId Int?
+  name                String
+  fullPath            String?
+  lastSyncedAt        DateTime            @default(now())
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  projects GitlabProject[]
+
+  @@unique([integrationId, gitlabGroupId])
+  @@index([integrationId, parentGitlabGroupId])
+}
+
+model GitlabProject {
+  id                String              @id @default(cuid())
+  integrationId     String
+  integration       IntegrationSettings @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  gitlabProjectId   Int
+  groupGitlabId     Int?
+  group             GitlabGroup?        @relation(fields: [integrationId, groupGitlabId], references: [integrationId, gitlabGroupId])
+  name              String
+  pathWithNamespace String
+  defaultBranch     String?
+  lastSyncedAt      DateTime            @default(now())
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@unique([integrationId, gitlabProjectId])
+  @@index([integrationId, groupGitlabId])
+}
