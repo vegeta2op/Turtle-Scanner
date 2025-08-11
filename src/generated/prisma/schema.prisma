@@ -151,6 +151,8 @@ enum IntegrationProvider {
   JIRA
   SLACK
   GITHUB
+  OPENAI
+  GEMINI
 }
 
 model IntegrationSettings {

@@ -28,7 +28,7 @@ function formatLabel(provider: Provider, r: any): RepoLabel {
 }
 
 export default function ScansPage() {
-  const { data, mutate, isLoading } = useSWR("/api/scans", fetcher, { refreshInterval: 2000 });
+  const { data, mutate, isLoading } = useSWR("/api/scans", fetcher, { refreshInterval: 2000, revalidateOnFocus: false, keepPreviousData: true });
   const [creating, setCreating] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
@@ -81,10 +81,20 @@ export default function ScansPage() {
 
   useEffect(() => {
     const run = async () => {
-      if (!query && !groupId && provider === "GITLAB") { setRepos([]); return; }
-      if (provider === "GITLAB" && groupId) {
-        const res = await fetch(`/api/gitlab/search?groupId=${groupId}&q=${encodeURIComponent(query || "")}`);
-        if (res.ok) setRepos(await res.json());
+      if (provider === "GITLAB") {
+        if (groupId) {
+          const res = await fetch(`/api/gitlab/search?groupId=${groupId}&q=${encodeURIComponent(query || "")}`);
+          if (res.ok) setRepos(await res.json());
+          return;
+        }
+        if (query) {
+          // Global search across membership when no group selected
+          const res = await fetch(`/api/gitlab/search?q=${encodeURIComponent(query)}`);
+          if (res.ok) setRepos(await res.json());
+          return;
+        }
+        setRepos([]);
+        return;
       }
       if (provider === "GITHUB") {
         const q = query ? encodeURIComponent(query) : "stars:%3E1";
@@ -113,6 +123,12 @@ export default function ScansPage() {
     GITLAB: !avail.GITLAB,
     GITHUB: !avail.GITHUB,
   } as const;
+
+  const deleteScan = async (id: string) => {
+    if (!confirm("Delete this scan?")) return;
+    const r = await fetch(`/api/scans/${id}`, { method: "DELETE" });
+    if (r.ok) mutate();
+  };
 
   return (
     <div className="space-y-4">
@@ -152,6 +168,7 @@ export default function ScansPage() {
                   {s.reportMarkdown && (
                     <Button asChild variant="outline"><a href={`data:text/markdown;charset=utf-8,${encodeURIComponent(s.reportMarkdown)}`} download={`scan-${s.id}.md`}>Export Markdown</a></Button>
                   )}
+                  <Button variant="destructive" onClick={() => deleteScan(s.id)}>Delete</Button>
                 </div>
               </CardContent>
             </Card>
@@ -188,7 +205,7 @@ export default function ScansPage() {
                     value={groupId}
                     onChange={(e) => setGroupId(e.target.value)}
                   >
-                    <option value="">Select a top-level group</option>
+                    <option value="">Search across your projects (no group)</option>
                     {topGroups.map((g) => (
                       <option key={g.id} value={String(g.id)}>
                         {g.name} {g.full_name ? `(${g.full_name})` : ""}
@@ -206,8 +223,8 @@ export default function ScansPage() {
             <div className="sm:col-span-2">
               <button
                 type="button"
-                className={`w-full border rounded-lg px-3 py-2 text-left bg-background ${(!avail[provider] || (provider === "GITLAB" && !groupId)) ? "opacity-50 cursor-not-allowed" : ""}`}
-                onClick={() => { if (avail[provider] && (provider !== "GITLAB" || groupId)) setDdOpen((v) => !v); }}
+                className={`w-full border rounded-lg px-3 py-2 text-left bg-background ${(!avail[provider] || (provider === "GITLAB" && !groupId && !query)) ? "opacity-50" : ""}`}
+                onClick={() => { if (avail[provider]) setDdOpen((v) => !v); }}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="truncate">
@@ -217,7 +234,9 @@ export default function ScansPage() {
                         <div className="text-xs text-muted-foreground truncate">{formatLabel(provider, selectedRepo).subtitle}</div>
                       </div>
                     ) : (
-                      <span className="text-muted-foreground">{provider === "GITLAB" ? "Enter group and search projects" : "Search repositories"}</span>
+                      <span className="text-muted-foreground">
+                        {provider === "GITLAB" ? (groupId ? "Enter group and search projects" : "Type to search your GitLab projects") : "Search repositories"}
+                      </span>
                     )}
                   </div>
                   <span className="text-xs text-muted-foreground">▾</span>
@@ -229,7 +248,7 @@ export default function ScansPage() {
                   <div className="absolute z-50 left-0 right-0 mt-2 rounded-xl border panel-modern p-2 shadow-2xl">
                     <input
                       className="w-full border rounded px-3 py-2 mb-2 bg-background"
-                      placeholder={provider === "GITLAB" ? "Type to filter projects" : "Type to search repositories"}
+                      placeholder={provider === "GITLAB" ? (groupId ? "Type to filter projects" : "Type to search your projects by name or full path") : "Type to search repositories"}
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       autoFocus

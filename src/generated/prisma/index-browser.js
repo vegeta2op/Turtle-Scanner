@@ -287,7 +287,9 @@ exports.IntegrationProvider = exports.$Enums.IntegrationProvider = {
   GITLAB: 'GITLAB',
   JIRA: 'JIRA',
   SLACK: 'SLACK',
-  GITHUB: 'GITHUB'
+  GITHUB: 'GITHUB',
+  OPENAI: 'OPENAI',
+  GEMINI: 'GEMINI'
 };
 
 exports.Prisma.ModelName = {

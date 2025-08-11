@@ -114,6 +114,13 @@
 .hover-lift { transition: transform 200ms ease, box-shadow 200ms ease; }
 .hover-lift:hover { transform: translateY(-2px); }
 
+/* Pretty scrollbars for panels */
+.scroll-area { scrollbar-width: thin; scrollbar-color: hsl(var(--foreground)/0.3) transparent; }
+.scroll-area::-webkit-scrollbar { height: 10px; width: 10px; }
+.scroll-area::-webkit-scrollbar-track { background: transparent; }
+.scroll-area::-webkit-scrollbar-thumb { background: hsl(var(--foreground)/0.24); border-radius: 8px; }
+.scroll-area::-webkit-scrollbar-thumb:hover { background: hsl(var(--foreground)/0.35); }
+
 @keyframes shimmer {
   from { background-position: 200% 0; }
   to { background-position: -200% 0; }

@@ -53,7 +53,7 @@ export async function fetchProjectKeyFiles(projectId: number) {
  * Fetch a broader snapshot of a GitLab project with guardrails:
  * - Determines default branch
  * - Traverses the repo tree recursively
- * - Filters to interesting files (config, manifests, CI, and code under src/)
+ * - Filters to interesting files (config, manifests, CI, and code under src/ and other common dirs)
  * - Limits total files and total bytes to fit LLM context windows
  */
 export async function fetchProjectSnapshot(
@@ -63,14 +63,18 @@ export async function fetchProjectSnapshot(
     maxFiles?: number;
     maxBytes?: number;
     include?: RegExp;
-  }
+  },
+  token?: string
 ) {
-  const api = createGitlabClient();
+  const api = createGitlabClient(token);
   const project = await (api.Projects.show as any)(projectId);
   const branch: string = options?.branch ?? project?.default_branch ?? "main";
   const includeRegex =
     options?.include ??
-    /(^|\/)(readme\.md|license|security\.md|package\.json|requirements\.txt|pom\.xml|build\.gradle|setup\.py|Cargo\.toml|go\.mod|Gemfile|Pipfile|composer\.json|Dockerfile|docker-compose\.ya?ml|\.github\/workflows\/|\.gitlab-ci\.yml|\.env\.example|src\/.*\.(ts|tsx|js|jsx|go|py|java|rb))$/i;
+    new RegExp(
+      '(^|\\/)(?:readme\\.md|license|security\\.md|package\\.json|requirements\\.txt|pom\\.xml|build\\.gradle|setup\\.py|Cargo\\.toml|go\\.mod|Gemfile|Pipfile|composer\\.json|Dockerfile|docker-compose\\.ya?ml|\\.github\\/workflows\\/|\\.gitlab-ci\\.yml|\\.env\\.example|(?:(?:src|lib|app|server|backend|frontend|cmd|pkg|internal|api|routes|controllers|models|utils|services)\\/.*\\.(?:ts|tsx|js|jsx|mjs|cjs|go|py|java|rb|rs|php|cs))|(?:[^\\/]+\\.(?:ts|tsx|js|jsx|mjs|cjs|go|py|java|rb|rs|php|cs)))$',
+      'i'
+    );
   const maxFiles = options?.maxFiles ?? 120;
   const maxBytes = options?.maxBytes ?? 600_000; // ~600 KB text
 

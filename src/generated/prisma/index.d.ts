@@ -98,7 +98,9 @@ export const IntegrationProvider: {
   GITLAB: 'GITLAB',
   JIRA: 'JIRA',
   SLACK: 'SLACK',
-  GITHUB: 'GITHUB'
+  GITHUB: 'GITHUB',
+  OPENAI: 'OPENAI',
+  GEMINI: 'GEMINI'
 };
 
 export type IntegrationProvider = (typeof IntegrationProvider)[keyof typeof IntegrationProvider]

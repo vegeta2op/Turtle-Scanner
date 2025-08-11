@@ -6,11 +6,12 @@ import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { KpiCard } from "@/components/ui/KpiCard";
+import DateText from "@/components/DateText";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function Dashboard() {
-  const { data } = useSWR("/api/stats", fetcher, { refreshInterval: 5000, revalidateOnFocus: false });
+  const { data } = useSWR("/api/stats", fetcher, { refreshInterval: 5000, revalidateOnFocus: false, revalidateOnMount: false });
   const bySeverity = (data?.bySeverity ?? []) as Array<{ severity: string; count: number }>;
   const severity = bySeverity.map((x: any) => ({ name: x.severity, value: x.count }));
   const recent = (data?.recentScans ?? []).map((x: any) => ({ name: x.id.slice(0, 6), value: x.status === "COMPLETED" ? 1 : 0 }));
@@ -77,7 +78,7 @@ export default function Dashboard() {
                 {(data?.recentScans ?? []).slice(0, 8).map((s: any) => (
                   <tr key={s.id} className="border-b last:border-0">
                     <td className="py-2 pr-4 font-mono text-xs"><Link className="underline" href={`/scans/${s.id}`}>{s.id.slice(0,8)}</Link></td>
-                    <td className="py-2 pr-4">{new Date(s.createdAt).toLocaleString()}</td>
+                    <td className="py-2 pr-4"><DateText value={s.createdAt} /></td>
                     <td className="py-2 pr-4"><Badge variant={s.status === "COMPLETED" ? "secondary" : s.status === "FAILED" ? "destructive" : "primary"}>{s.status}</Badge></td>
                   </tr>
                 ))}
